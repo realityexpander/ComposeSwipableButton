@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Done
+import androidx.compose.material.icons.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,7 +31,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.realityexpander.composeswipablebutton.ui.theme.ComposeSwipableButtonTheme
@@ -66,13 +66,13 @@ fun SwipeButtonSample() {
 
     SwipeButton(
         text = "SAVE",
-        isComplete = isComplete,
-        onSwipe = {
+        onSwipeComplete = {
             coroutineScope.launch {
                 delay(2000)
                 setIsComplete(true)
             }
         },
+        isComplete = isComplete,
     )
 }
 
@@ -94,7 +94,7 @@ fun SwipeIndicator(
             .background(Color.White),
     ) {
         Icon(
-            imageVector = Icons.Rounded.Lock,
+            imageVector = Icons.Rounded.KeyboardArrowRight,
             contentDescription = null,
             tint = backgroundColor,
             modifier = Modifier.size(36.dp),
@@ -106,17 +106,18 @@ fun SwipeIndicator(
 @Composable
 fun SwipeButton(
     text: String,
-    isComplete: Boolean,
-    doneImageVector: ImageVector = Icons.Rounded.Done,
     modifier: Modifier = Modifier,
     backgroundColor: Color = Color(0xFF03A9F4),
-    onSwipe: () -> Unit,
+    onSwipeComplete: () -> Unit,
+    isComplete: Boolean,
+    doneImageVector: ImageVector = Icons.Rounded.Done,
 ) {
     val width = 200.dp
     val widthInPx = with(LocalDensity.current) {
         width.toPx()
     }
-    val anchors = mapOf(
+
+    val swipeableStateAnchors = mapOf(
         0F to 0,
         widthInPx to 1,
     )
@@ -124,7 +125,7 @@ fun SwipeButton(
     val (swipeComplete, setSwipeComplete) = remember {
         mutableStateOf(false)
     }
-    val alpha: Float by animateFloatAsState(
+    val swipeIndicatorAlpha: Float by animateFloatAsState(
         targetValue = if (swipeComplete) {
             0F
         } else {
@@ -141,7 +142,7 @@ fun SwipeButton(
     ) {
         if (swipeableState.currentValue == 1) {
             setSwipeComplete(true)
-            onSwipe()
+            onSwipeComplete()
         }
     }
 
@@ -167,19 +168,19 @@ fun SwipeButton(
         SwipeIndicator(
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .alpha(alpha)
+                .alpha(swipeIndicatorAlpha)
                 .offset {
                     IntOffset(swipeableState.offset.value.roundToInt(), 0)
                 }
                 .swipeable(
                     state = swipeableState,
-                    anchors = anchors,
+                    anchors = swipeableStateAnchors,
                     thresholds = { _, _ ->
-                        FractionalThreshold(0.8F)
+                        FractionalThreshold(0.8F) // when to snap to the next anchor
                     },
                     orientation = Orientation.Horizontal,
                 )
-                .rotate(180F * swipeableState.offset.value / widthInPx),
+                .rotate(90F * swipeableState.offset.value / widthInPx),
             backgroundColor = backgroundColor,
         )
         Text(
@@ -189,7 +190,7 @@ fun SwipeButton(
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .alpha(alpha)
+                .alpha(swipeIndicatorAlpha)
                 .padding(
                     horizontal = 80.dp,
                 )
